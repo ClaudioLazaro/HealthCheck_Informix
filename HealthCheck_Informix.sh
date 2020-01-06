@@ -110,6 +110,8 @@ echo '<br><b>Processos top 20 </b><br>'
 #system.cpu.load[,avg5]
 #zabbix_get -s localhost -k  net.dns[,grupoamil.com.br]
 #zabbix_get -s localhost -k  vfs.dev.writ[,,avg5]
+top -b -n 1|head -n 5|awk '{print $0"<br>"}'
+echo "<br>"
 ps -eo user,comm,pid,ppid,pcpu,%mem --sort -pcpu|head -20|awk 'int($5) > int(90) {print "<span style=\"font-size:28px;color:red;margin-right:10px;\">&#9888;</span><span style=\"color:red;font-weight:bold;\">"$0"</span><br>";next};{print $0"<br>"}'
 
 
@@ -136,13 +138,14 @@ netstat -s |awk '{print $0"<br>"}'
 echo '<br><b>Verificando Servidores de DNS</b><br>'
 DNST="/tmp/dnstemp"
 cat /etc/resolv.conf |awk '/[0-9][0-9][0-9]/ {print system("ping -c 2 "$2)}' &>> $DNST
-if [[ -s $DNST ]];then
- awk '{print $0 "<br>"}' $DNST
- rm -rf $DNST	
+if [[ -e $DNST ]];then
+	awk '{print $0 "<br>"}' $DNST
+	rm -rf $DNST	
 else 
- echo "Sem Dados Para Consulta, verifique o arquivo resolv.conf <br>"
+ 	echo "Sem Dados Para Consulta, verifique o arquivo resolv.conf <br>"
 fi 
- echo '<br><b>Resumo das interfaces</b><br>'
+
+echo '<br><b>Resumo das interfaces</b><br>'
 ip addr |awk '{print $0 "<br>"}'
 echo "</div>"
 
@@ -205,7 +208,8 @@ sysmaster:syschunks a,
 sysmaster:sysdbspaces b
 where a.dbsnum=b.dbsnum
 group by b.name,a.pagesize,a.dbsnum
-order by a.dbsnum;
+order by a.dbsnum
+and b.name not like '%temp%';
 +
 echo "<table>"
 echo "<tr>"
@@ -216,12 +220,15 @@ echo "  <th>sizeUsed</th>"
 echo "  <th>sizeFree</th>"
 echo "  <th>Percent</th>"
 echo "</tr>"
-cat $UNLOAD| awk 'BEGIN { FS="|"} function printRow(tag) {print "<tr>";for(i=1; i<=NF; i++) print "<"tag">"$i"</"tag">";print "</tr>"} printRow("td")'
+if [[ -e "$UNLOAD" ]];then
+	cat $UNLOAD| awk 'BEGIN { FS="|"} function printRow(tag) {print "<tr>";for(i=1; i<=NF; i++) print "<"tag">"$i"</"tag">";print "</tr>"} printRow("td")'
+	rm -rf $UNLOAD
+else
+	echo "<br><b>DADOS NAO ENCONTRADOS</b><br>"	
+fi
 echo "</table>"
-rm -rf $UNLOAD
 
 echo '<br><b>Níveis do índice</b><br>'
-
 echo '<p>O número de níveis de índice também pode afetar adversamente o desempenho. Quanto mais níveis de índice, mais probes o IDS precisa obter para indexar nós de folhas. Além disso, se um nó folha for dividido ou mesclado, pode levar mais tempo para que todo o índice se ajuste a essa alteração. Por exemplo, se um índice tiver apenas dois níveis, apenas dois níveis precisarão ser ajustados, mas se tiver quatro níveis, todos os quatro níveis precisarão ser ajustados de acordo. O tempo usado para esse ajuste é, obviamente, muito mais longo. Isso é especialmente verdade em um ambiente OLTP em que há inserções, exclusões e atualizações constantes que farão com que os índices sejam constantemente divididos ou mesclados.</p>'
 
 echo '<p>Se qualquer índice tiver mais de 4 níveis, considere descartá-lo e recriá-lo para consolidar seus níveis para obter melhor desempenho</p>'
@@ -229,9 +236,9 @@ echo '<p>Se qualquer índice tiver mais de 4 níveis, considere descartá-lo e r
 dbaccess sysmaster &>> /dev/null <<+
 set isolation dirty read;
 UNLOAD TO '$UNLOAD'
-SELECT idxname[1,40], levels 
+SELECT top 20 idxname[1,40], levels 
     FROM sysindexes 
-    WHERE levels > 3	
+    WHERE levels > 2	
 ORDER BY 2 desc;
 +
 echo "<table>"
@@ -239,12 +246,16 @@ echo "<tr>"
 echo "  <th>Name/Index</th>"
 echo "  <th>levels</th>"
 echo "</tr>"
-cat $UNLOAD | awk 'BEGIN { FS="|"} function printRow(tag) {if (int($2) > int(3)) print"<tr bgcolor='#FF0000'>";else print "<tr>";for(i=1; i<=NF; i++) print "<"tag">"$i"</"tag">";print "</tr>"} printRow("td")'
+if [[ -e "$UNLOAD" ]];then
+	cat $UNLOAD | awk 'BEGIN { FS="|"} function printRow(tag) {if (int($2) > int(3)) print"<tr bgcolor='#FF0000'>";else print "<tr>";for(i=1; i<=NF; i++) print "<"tag">"$i"</"tag">";print "</tr>"} printRow("td")'
+	rm -rf $UNLOAD
+else
+	echo "<br><b>DADOS NAO ENCONTRADOS</b><br>"
+	
+fi
 echo "</table>"
-rm -rf $UNLOAD
 
 echo '<br><b>Top 20 maiores tabelas </b><br>'
-
 echo '<p>Essas tabelas sao as top 20 maiores do banco de dados, deve ser acompanhadas e verificar a  possibilidade de particionamento</p>'
 dbaccess sysmaster &>> /dev/null <<+
 set isolation dirty read;
@@ -267,9 +278,15 @@ echo "  <th>pagesize</th>"
 echo "  <th>size</th>"
 echo "  <th>nptotal</th>"
 echo "</tr>"
-cat $UNLOAD | awk 'BEGIN { FS="|"} function printRow(tag) {print "<tr>";for(i=1; i<=NF; i++) print "<"tag">"$i"</"tag">";print "</tr>"} printRow("td")'
+if [[ -e "$UNLOAD" ]];then
+	cat $UNLOAD | awk 'BEGIN { FS="|"} function printRow(tag) {print "<tr>";for(i=1; i<=NF; i++) print "<"tag">"$i"</"tag">";print "</tr>"} printRow("td")'
+	rm -rf $UNLOAD
+else
+	echo "<br><b>DADOS NAO ENCONTRADOS</b><br>"
+	
+fi
 echo "</table>"
-rm -rf $UNLOAD
+
 
 
 echo '<br><b>Top 10 Table com limite de paginas por fragmento </b><br>'
@@ -306,11 +323,11 @@ echo "  <th>dataporpg</th>"
 echo "  <th>totalpglivre</th>"
 echo "  <th>sizepg</th>"
 echo "</tr>"
-if [[-s $UNLOAD]];then
+if [[ -e "$UNLOAD" ]];then
 	cat $UNLOAD | awk 'BEGIN { FS="|"} function printRow(tag) {if (int($4) > int(13421772)) print"<tr style='background-color:red'>";else print "<tr>";for(i=1; i<=NF; i++) print "<"tag">"$i"</"tag">";print "</tr>"} printRow("td")'
 	rm -rf $UNLOAD
 else
-	echo "Nao havia dados para serem mostrados, ou a consulta nao foi suficiente <br>"
+	echo "<br><b>DADOS NAO ENCONTRADOS</b><br>"
 	
 fi
 echo "</table>"
@@ -339,11 +356,11 @@ echo "  <th>statedesc</th>"
 echo "  <th>statedetail</th>"
 echo "  <th>cpu_time</th>"
 echo "</tr>"
-if [[-s $UNLOAD]];then
+if [[ -e "$UNLOAD" ]];then
 	cat $UNLOAD | awk 'BEGIN { FS="|"} function printRow(tag) {print "<tr>";for(i=1; i<=NF; i++) print "<"tag">"$i"</"tag">";print "</tr>"} printRow("td")'
 	rm -rf $UNLOAD
 else
-	echo "Nao havia dados para serem mostrados, ou a consulta nao foi suficiente <br>"
+	echo "<br><b>DADOS NAO ENCONTRADOS</b><br>"
 	
 fi
 echo "</table>"
@@ -353,7 +370,7 @@ echo '<p>E inportante observar quais tasks podem estar impactando</p>'
 dbaccess sysmaster &>> /dev/null <<+
 set isolation dirty read;
 UNLOAD TO '$UNLOAD'
-select tk_id, tk_name, tk_dbs,tk_description,tk_frequency,tk_next_execution,tk_enable from sysadmin:ph_task where tk_enable='t';
+select tk_id, tk_name, tk_dbs,SUBSTRING (tk_description FROM 1 FOR 70),tk_frequency,tk_enable from sysadmin:ph_task where tk_enable='t';
 +
 echo "<table>"
 echo "<tr>"
@@ -365,21 +382,21 @@ echo "  <th>tk_frequency</th>"
 echo "  <th>tk_next_execution</th>"
 echo "  <th>tk_enable</th>"
 echo "</tr>"
-if [[-s $UNLOAD]];then
+if [[ -e "$UNLOAD" ]];then
 	cat $UNLOAD | awk 'BEGIN { FS="|"} function printRow(tag) {print "<tr>";for(i=1; i<=NF; i++) print "<"tag">"$i"</"tag">";print "</tr>"} printRow("td")'
 	rm -rf $UNLOAD
 else
-	echo "Nao havia dados para serem mostrados, ou a consulta nao foi suficiente <br>"
+	echo "<br><b>DADOS NAO ENCONTRADOS</b><br>"
 	
 fi
 echo "</table>"
 
 echo '<br><b>Scheduler informix Menssagens</b><br>'
-echo '<p>Check de menssagens ph_alert/p>'
+echo '<p>Check de menssagens ph_alert</p>'
 dbaccess sysmaster &>> /dev/null <<+
 set isolation dirty read;
-UNLOAD TO '$UNLOAD
-select alert_type,alert_time,alert_message from sysadmin:ph_alert where alert_type<>'INFO' 
+UNLOAD TO '$UNLOAD'
+select first 20 alert_type,alert_time,SUBSTRING (alert_message FROM 1 FOR 70) from sysadmin:ph_alert order by id desc
 +
 echo "<table>"
 echo "<tr>"
@@ -388,20 +405,20 @@ echo "  <th>tk_name</th>"
 echo "  <th>alert_time</th>"
 echo "  <th>alert_message</th>"
 echo "</tr>"
-if [[-s $UNLOAD]];then
+if [[ -e "$UNLOAD" ]];then
 	cat $UNLOAD | awk 'BEGIN { FS="|"} function printRow(tag) {print "<tr>";for(i=1; i<=NF; i++) print "<"tag">"$i"</"tag">";print "</tr>"} printRow("td")'
 	rm -rf $UNLOAD
 else
-	echo "Nao havia dados para serem mostrados, ou a consulta nao foi suficiente <br>"
+	echo "<br><b>DADOS NAO ENCONTRADOS</b><br>"
 	
 fi
 echo "</table>"
 
 echo '<br><b>Buffer Turnovers por hora</b><br>'
-echo '<p>O ideal e que o BTR seja feito 7x por hora/p>'
+echo '<p>O ideal e que o BTR seja feito 7x por hora, caso o campo BTR esteja muito alto reveja as configuracoes de buffer poll</p>'
 dbaccess sysmaster &>> /dev/null <<+
 set isolation dirty read;
-UNLOAD TO '$UNLOAD
+UNLOAD TO '$UNLOAD'
 select
 	bufsize,
         pagreads,
@@ -418,21 +435,21 @@ echo "  <th>bufwrites</th>"
 echo "  <th>nbuffs</th>"
 echo "  <th>BTR</th>"
 echo "</tr>"
-if [[-s $UNLOAD]];then
-	cat $UNLOAD | awk 'BEGIN { FS="|"} function printRow(tag) {print "<tr>";for(i=1; i<=NF; i++) print "<"tag">"$i"</"tag">";print "</tr>"} printRow("td")'
+if [[ -e "$UNLOAD" ]];then
+	cat $UNLOAD | awk 'BEGIN { FS="|"} function printRow(tag) {if (int($4) > int(7)) print"<tr style='background-color:red'>";else print "<tr>";for(i=1; i<=NF; i++) print "<"tag">"$i"</"tag">";print "</tr>"} printRow("td")'
 	rm -rf $UNLOAD
 else
-	echo "Nao havia dados para serem mostrados, ou a consulta nao foi suficiente <br>"
+	echo "<br><b>DADOS NAO ENCONTRADOS</b><br>"
 	
 fi
 echo "</table>"
 
 
 echo '<br><b>Parametros do onconfig carregados  em memoria</b><br>'
-echo '<p>Onconfig/p>'
+echo '<p>Onconfig</p>'
 dbaccess sysmaster &>> /dev/null <<+
 set isolation dirty read;
-UNLOAD TO '$UNLOAD
+UNLOAD TO '$UNLOAD'
 select 	cf_name parameter, 
 	cf_effective effective_value
 from 	sysconfig
@@ -442,11 +459,11 @@ echo "<tr>"
 echo "  <th>parameter</th>"
 echo "  <th>effective_value</th>"
 echo "</tr>"
-if [[-s $UNLOAD]];then
+if [[ -e "$UNLOAD" ]];then
 	cat $UNLOAD | awk 'BEGIN { FS="|"} function printRow(tag) {print "<tr>";for(i=1; i<=NF; i++) print "<"tag">"$i"</"tag">";print "</tr>"} printRow("td")'
 	rm -rf $UNLOAD
 else
-	echo "Nao havia dados para serem mostrados, ou a consulta nao foi suficiente <br>"
+	echo "<br><b>DADOS NAO ENCONTRADOS</b><br>"
 	
 fi
 echo "</table>"
