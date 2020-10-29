@@ -13,3 +13,9 @@ Por favor abra um <i>Pull Request</i> com a atualização e submeta as <i>Issues
 A definir:
 Por favor abra um <i>Pull Request</i> com a atualização e submeta as <i>Issues</i> para discussão.
 
+
+### 🙌 Colabore
+
+- Abra <i>Pull Requests</i> com atualizações
+- Discuta ideias em <i>Issues</i>
+- Compartilhe o repositório com a sua comunidade
