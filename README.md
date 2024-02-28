@@ -1,6 +1,6 @@
 # HealthCheck_Informix
 HealthCheck_Informix
- **JUST SIMPLE HEALTH CHECK INFORMIX DATA BASE TOOL`S**
+ - **JUST SIMPLE HEALTH CHECK INFORMIX DATA BASE TOOL`S**
 
 ## Escopo do Projeto
 Esse projeto tem com objetivo criar um relatorio (exame) do ambiente Informix, gerando um relatorio em html com os principais pontos de checagem.
