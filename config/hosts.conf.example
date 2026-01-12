@@ -1,0 +1,17 @@
+# Informix HealthCheck Hosts Configuration
+# Format: hostname|instance_name|port|description
+# Lines starting with # are comments
+
+# Production Servers
+prod-db01|informix_prod|9088|Production Database Server 1
+prod-db02|informix_prod|9088|Production Database Server 2
+
+# Development Servers
+dev-db01|informix_dev|9088|Development Database Server
+
+# Test Servers
+test-db01|informix_test|9088|Test Database Server
+
+# High Availability Setup
+ha-primary|informix_ha|9088|HA Primary Node
+ha-secondary|informix_ha|9088|HA Secondary Node

@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Informix HealthCheck Report - {{REPORT_DATE}}</title>
+
+    <!-- Chart.js for interactive charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --info-color: #16a085;
+            --light-bg: #ecf0f1;
+            --dark-bg: #34495e;
+            --border-color: #bdc3c7;
+            --text-color: #2c3e50;
+            --text-muted: #7f8c8d;
+            --card-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            --card-shadow-hover: 0 4px 16px rgba(0,0,0,0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        /* Header Styles */
+        .header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--dark-bg) 100%);
+            color: white;
+            padding: 30px 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 15s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header h1 i {
+            font-size: 0.9em;
+        }
+
+        .header-info {
+            display: flex;
+            gap: 30px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .header-info-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255,255,255,0.1);
+            padding: 10px 20px;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-info-item i {
+            font-size: 1.2em;
+        }
+
+        /* Navigation & Filters */
+        .nav-bar {
+            background: var(--light-bg);
+            padding: 20px 40px;
+            border-bottom: 2px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .nav-tab {
+            padding: 10px 20px;
+            background: white;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-tab:hover {
+            background: var(--secondary-color);
+            color: white;
+            border-color: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        .nav-tab.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .search-input {
+            padding: 10px 15px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            min-width: 250px;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+
+        /* Summary Cards */
+        .summary-section {
+            padding: 30px 40px;
+            background: var(--light-bg);
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .summary-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+
+        .summary-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--card-shadow-hover);
+        }
+
+        .summary-card.critical {
+            border-left-color: var(--danger-color);
+        }
+
+        .summary-card.warning {
+            border-left-color: var(--warning-color);
+        }
+
+        .summary-card.success {
+            border-left-color: var(--success-color);
+        }
+
+        .summary-card.info {
+            border-left-color: var(--info-color);
+        }
+
+        .summary-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .summary-card-title {
+            font-size: 0.9em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .summary-card-icon {
+            font-size: 2em;
+            opacity: 0.3;
+        }
+
+        .summary-card-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .summary-card-description {
+            font-size: 0.9em;
+            color: var(--text-muted);
+        }
+
+        /* Content Section */
+        .content-section {
+            padding: 30px 40px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--dark-bg) 100%);
+            color: white;
+            padding: 20px 25px;
+            border-radius: 12px 12px 0 0;
+            margin-bottom: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .section-body {
+            background: white;
+            border: 2px solid var(--border-color);
+            border-top: none;
+            border-radius: 0 0 12px 12px;
+            overflow: hidden;
+        }
+
+        /* Table Styles */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: var(--light-bg);
+        }
+
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--primary-color);
+            text-transform: uppercase;
+            font-size: 0.85em;
+            letter-spacing: 1px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid var(--light-bg);
+        }
+
+        tbody tr {
+            transition: all 0.3s ease;
+        }
+
+        tbody tr:hover {
+            background: var(--light-bg);
+            transform: scale(1.01);
+        }
+
+        /* Status Badges */
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-badge.critical {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .status-badge.warning {
+            background: var(--warning-color);
+            color: white;
+        }
+
+        .status-badge.ok {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .status-badge.info {
+            background: var(--info-color);
+            color: white;
+        }
+
+        /* Chart Container */
+        .chart-container {
+            padding: 30px;
+            background: white;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 400px;
+            margin-bottom: 30px;
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--dark-bg);
+            color: white;
+            padding: 30px 40px;
+            text-align: center;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .nav-bar, .content-section, .summary-section {
+                padding: 20px;
+            }
+
+            .summary-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .search-input {
+                min-width: 100%;
+            }
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .nav-bar, .btn, .search-box {
+                display: none !important;
+            }
+
+            .section {
+                display: block !important;
+                page-break-inside: avoid;
+            }
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-state i {
+            font-size: 4em;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            border: 3px solid var(--light-bg);
+            border-top: 3px solid var(--secondary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-content">
+                <h1>
+                    <i class="fas fa-heartbeat"></i>
+                    Informix HealthCheck Report
+                </h1>
+                <div class="header-info">
+                    <div class="header-info-item">
+                        <i class="fas fa-calendar"></i>
+                        <span>{{REPORT_DATE}}</span>
+                    </div>
+                    <div class="header-info-item">
+                        <i class="fas fa-clock"></i>
+                        <span>{{REPORT_TIME}}</span>
+                    </div>
+                    <div class="header-info-item">
+                        <i class="fas fa-server"></i>
+                        <span>{{TOTAL_HOSTS}} Hosts</span>
+                    </div>
+                    <div class="header-info-item">
+                        <i class="fas fa-database"></i>
+                        <span>Version {{INFORMIX_VERSION}}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation & Filters -->
+        <div class="nav-bar">
+            <div class="nav-tabs">
+                <div class="nav-tab active" onclick="showSection('overview')">
+                    <i class="fas fa-chart-pie"></i>
+                    Overview
+                </div>
+                <div class="nav-tab" onclick="showSection('backup')">
+                    <i class="fas fa-save"></i>
+                    Backups
+                </div>
+                <div class="nav-tab" onclick="showSection('dbspace')">
+                    <i class="fas fa-hdd"></i>
+                    DBSpaces
+                </div>
+                <div class="nav-tab" onclick="showSection('pages')">
+                    <i class="fas fa-file"></i>
+                    Pages
+                </div>
+                <div class="nav-tab" onclick="showSection('sessions')">
+                    <i class="fas fa-users"></i>
+                    Sessions
+                </div>
+                <div class="nav-tab" onclick="showSection('alerts')">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Alerts
+                </div>
+            </div>
+            <div class="search-box">
+                <input type="text" class="search-input" id="searchInput" placeholder="Search..." onkeyup="filterTable()">
+                <button class="btn btn-primary" onclick="exportToPDF()">
+                    <i class="fas fa-file-pdf"></i>
+                    Export PDF
+                </button>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="summary-section">
+            <div class="summary-cards">
+                {{SUMMARY_CARDS}}
+            </div>
+        </div>
+
+        <!-- Content Sections -->
+        <div class="content-section">
+            {{CONTENT_SECTIONS}}
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-content">
+                <div>
+                    <strong>Informix HealthCheck</strong> v2.0.0
+                </div>
+                <div>
+                    Generated on {{REPORT_DATE}} at {{REPORT_TIME}}
+                </div>
+                <div>
+                    <i class="fas fa-heart" style="color: #e74c3c;"></i>
+                    Made with care for DBAs
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Show specific section
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+
+            // Show selected section
+            const targetSection = document.getElementById(sectionName + '-section');
+            if (targetSection) {
+                targetSection.classList.add('active');
+            }
+
+            // Update active tab
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.closest('.nav-tab').classList.add('active');
+        }
+
+        // Filter table based on search input
+        function filterTable() {
+            const input = document.getElementById('searchInput');
+            const filter = input.value.toLowerCase();
+            const sections = document.querySelectorAll('.section.active table tbody tr');
+
+            sections.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(filter) ? '' : 'none';
+            });
+        }
+
+        // Export to PDF (requires wkhtmltopdf on server)
+        function exportToPDF() {
+            window.print();
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Show overview section by default
+            showSection('overview');
+
+            // Initialize tooltips if any
+            console.log('Informix HealthCheck Report loaded successfully');
+        });
+    </script>
+</body>
+</html>
