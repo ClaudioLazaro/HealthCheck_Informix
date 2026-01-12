@@ -1,0 +1,125 @@
+{
+  "version": "2.0.0",
+  "description": "Informix HealthCheck Configuration",
+
+  "database": {
+    "hosts_file": "config/hosts.conf",
+    "connection_timeout": 30,
+    "query_timeout": 300,
+    "isolation_level": "DIRTY READ"
+  },
+
+  "thresholds": {
+    "backup": {
+      "critical_age_hours": 24,
+      "warning_age_hours": 20
+    },
+    "dbspace": {
+      "critical_free_gb": 10,
+      "warning_free_gb": 20,
+      "min_report_threshold_gb": 15
+    },
+    "pages": {
+      "critical_threshold": 13421772,
+      "warning_threshold": 10000000,
+      "max_pages_limit": 16777215
+    },
+    "alerts": {
+      "exclude_levels": ["INFO"],
+      "max_age_days": 1
+    }
+  },
+
+  "reports": {
+    "output_dir": "reports",
+    "history_dir": "data/history",
+    "log_dir": "logs",
+    "filename_pattern": "HealthCheck_Report_%Y%m%d_%H%M%S.html",
+    "retention_days": 90,
+    "enable_history": true,
+    "enable_charts": true,
+    "enable_interactive_filters": true
+  },
+
+  "email": {
+    "enabled": true,
+    "smtp_server": "smtp.yourdomain.com.br",
+    "smtp_port": 587,
+    "use_tls": true,
+    "auth_user": "informix_healthcheck",
+    "auth_password_env": "HEALTHCHECK_SMTP_PASSWORD",
+    "from": "informix@yourdomain.com.br",
+    "to": ["dba-team@yourdomain.com.br"],
+    "cc": [],
+    "subject": "Informix HealthCheck Report - %DATE%",
+    "send_on_critical_only": false
+  },
+
+  "notifications": {
+    "webhook_url": "",
+    "slack_enabled": false,
+    "teams_enabled": false
+  },
+
+  "checks": {
+    "backup": {
+      "enabled": true,
+      "priority": "critical"
+    },
+    "dbspace": {
+      "enabled": true,
+      "priority": "critical"
+    },
+    "pages": {
+      "enabled": true,
+      "priority": "high"
+    },
+    "alerts": {
+      "enabled": true,
+      "priority": "medium"
+    },
+    "sessions": {
+      "enabled": true,
+      "priority": "medium",
+      "long_running_threshold_minutes": 60
+    },
+    "locks": {
+      "enabled": true,
+      "priority": "high",
+      "max_lock_wait_seconds": 300
+    },
+    "checkpoints": {
+      "enabled": true,
+      "priority": "medium"
+    },
+    "logical_logs": {
+      "enabled": true,
+      "priority": "high",
+      "min_free_logs": 5
+    }
+  },
+
+  "informix_versions": {
+    "auto_detect": true,
+    "compatibility_mode": "auto",
+    "supported_versions": [
+      "11.50",
+      "11.70",
+      "12.10",
+      "14.10"
+    ]
+  },
+
+  "performance": {
+    "parallel_checks": true,
+    "max_concurrent_jobs": 4,
+    "cache_queries": false
+  },
+
+  "advanced": {
+    "debug_mode": false,
+    "verbose_logging": false,
+    "save_raw_data": true,
+    "compression_enabled": true
+  }
+}
